@@ -25,5 +25,5 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6.13.0
         with:
-          context: image/
+          push: true
           tags: ghcr.io/paulchen/push-website:latest
