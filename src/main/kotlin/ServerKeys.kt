@@ -34,7 +34,6 @@ class ServerKeys private constructor() {
         val appServerPublicKeyFile: Path = Paths.get("data/key.public")
         val appServerPrivateKeyFile: Path = Paths.get("data/key.private")
 
-        // TODO persistence
         val cryptoService = CryptoService.getInstance()
         if (Files.exists(appServerPublicKeyFile) && Files.exists(appServerPrivateKeyFile)) {
             val appServerPublicKey = Files.readAllBytes(appServerPublicKeyFile)
