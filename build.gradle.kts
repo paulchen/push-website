@@ -3,6 +3,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val ktorVersion = "3.0.3"
 val log4jVersion = "2.24.3"
 val kotlinVersion = "2.1.10"
+val jacksonVersion = "2.18.2"
 
 plugins {
     kotlin("jvm") version "2.1.10"
@@ -23,6 +24,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-logging:$ktorVersion")
@@ -32,8 +34,10 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.auth0:java-jwt:4.5.0")
+    implementation("at.favre.lib:bcrypt:0.10.2")
 }
 
 tasks.test {

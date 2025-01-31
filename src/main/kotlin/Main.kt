@@ -3,6 +3,7 @@ package at.rueckgr
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
@@ -16,6 +17,12 @@ fun main() {
         install(ContentNegotiation) {
             jackson {
                 findAndRegisterModules()
+            }
+        }
+        install(Authentication) {
+            basic(name = "basic-auth") {
+                realm = "push-notifications"
+                validate { credentials -> AuthenticationService.getInstance().authenticate(credentials) }
             }
         }
         // TODO logging
@@ -50,10 +57,11 @@ fun main() {
                     call.respond(HttpStatusCode.OK)
                 }
             }
-            route("/services/notify") {
-                post {
-                    // TODO authentication, use https://github.com/patrickfav/bcrypt
-                    PushService().sendMessageToAllSubscribers(call.receiveText())
+            authenticate("basic-auth") {
+                route("/services/notify") {
+                    post {
+                        PushService().sendMessageToAllSubscribers(call.receiveText())
+                    }
                 }
             }
         }

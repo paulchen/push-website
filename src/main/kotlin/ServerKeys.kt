@@ -9,7 +9,7 @@ import java.security.interfaces.ECPublicKey
 import java.util.*
 
 
-class ServerKeys {
+class ServerKeys private constructor() {
     companion object {
         private var instance: ServerKeys? = null
 
