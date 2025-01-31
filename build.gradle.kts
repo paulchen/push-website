@@ -4,6 +4,7 @@ val ktorVersion = "3.0.3"
 val log4jVersion = "2.24.3"
 val kotlinVersion = "2.1.10"
 val jacksonVersion = "2.18.2"
+val ktormVersion = "4.1.1"
 
 plugins {
     kotlin("jvm") version "2.1.10"
@@ -38,6 +39,10 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.auth0:java-jwt:4.5.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
+
+    implementation("org.ktorm:ktorm-core:$ktormVersion")
+    implementation("org.ktorm:ktorm-support-sqlite:$ktormVersion")
+    implementation("org.xerial:sqlite-jdbc:3.48.0.0")
 }
 
 tasks.test {

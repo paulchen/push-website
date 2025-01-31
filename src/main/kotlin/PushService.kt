@@ -1,5 +1,6 @@
 package at.rueckgr
 
+import at.rueckgr.database.Subscription
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -24,8 +25,8 @@ class PushService {
 
     fun sendMessageToAllSubscribers(message: String) {
         SubscriptionService.getInstance().getSubscriptions().forEach {
-            if (!this.sendMessage(it.value, message)) {
-                SubscriptionService.getInstance().unsubscribe(it.value)
+            if (!this.sendMessage(it, message)) {
+                SubscriptionService.getInstance().unsubscribe(it.endpoint)
             }
         }
     }
@@ -33,7 +34,7 @@ class PushService {
     private fun sendMessage(subscription: Subscription, message: String): Boolean {
         val bytes: ByteArray = CryptoService.getInstance().encrypt(
             ObjectMapper().writeValueAsString(message),
-            subscription.keys.p256dh, subscription.keys.auth, 0
+            subscription.p256dh, subscription.auth, 0
         )
 
         val client = HttpClient(CIO) {
