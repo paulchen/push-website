@@ -31,8 +31,8 @@ class ServerKeys private constructor() {
     val publicKeyUncompressed: ByteArray
 
     init {
-        val appServerPublicKeyFile: Path = Paths.get("key.public")
-        val appServerPrivateKeyFile: Path = Paths.get("key.private")
+        val appServerPublicKeyFile: Path = Paths.get("data/key.public")
+        val appServerPrivateKeyFile: Path = Paths.get("data/key.private")
 
         // TODO persistence
         val cryptoService = CryptoService.getInstance()

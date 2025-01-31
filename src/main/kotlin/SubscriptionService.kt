@@ -26,7 +26,7 @@ class SubscriptionService private constructor() {
     }
 
     private fun connect(): Database {
-        val connection = Database.connect(url = "jdbc:sqlite:database.db", dialect = SQLiteDialect())
+        val connection = Database.connect(url = "jdbc:sqlite:data/database.db", dialect = SQLiteDialect())
 
         // TODO only run this once during startup
         val createTableQuery = """CREATE TABLE IF NOT EXISTS `subscription` (

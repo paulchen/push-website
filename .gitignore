@@ -43,5 +43,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-/key.public
-/key.private
+/data/key.public
+/data/key.private
+/data/database.db

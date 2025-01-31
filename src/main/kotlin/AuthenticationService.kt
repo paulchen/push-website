@@ -24,7 +24,7 @@ class AuthenticationService private constructor() {
     }
 
     fun authenticate(credentials: UserPasswordCredential): UserIdPrincipal? {
-        val file = File("users.yaml") // TODO
+        val file = File("data/users.yaml") // TODO
         if (!file.exists()) {
             // TODO
             return null
