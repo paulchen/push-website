@@ -11,6 +11,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.io.File
 
 // TODO reorganize packages
 fun main() {
@@ -29,6 +30,7 @@ fun main() {
         // TODO logging
         routing {
             staticResources("/", "static")
+            staticFiles("/icons", File("data/icons"))
             route("/services/publicSigningKey") {
                 get {
                     call.respond(ServerKeys.getInstance().publicKeyUncompressed)
@@ -61,10 +63,12 @@ fun main() {
             authenticate("basic-auth") {
                 route("/services/notify") {
                     post {
-                        PushService().sendMessageToAllSubscribers(call.receiveText())
+                        PushService().sendMessageToAllSubscribers(call.receive<PushMessage>())
                     }
                 }
             }
         }
     }.start(wait = true)
 }
+
+data class PushMessage(val title: String, val text: String, val url: String, val icon: String)

@@ -1,14 +1,10 @@
 const subscribeButton = document.getElementById('subscribeButton');
 const unsubscribeButton = document.getElementById('unsubscribeButton');
 
-// TODO simplify and adapt
-// const factOutput = document.getElementById('fact');
-// const jokeOutput = document.getElementById('joke');
-
 if ("serviceWorker" in navigator) {
     try {
-        checkSubscription();
-        init();
+        checkSubscription().then();
+        init().then();
     } catch (e) {
         console.error('error init(): ' + e);
     }
@@ -66,24 +62,7 @@ async function init() {
 
     await navigator.serviceWorker.ready;
     console.info('Service Worker has been installed and is ready');
-//    navigator.serviceWorker.addEventListener('message', event => displayLastMessages());
-
-//    displayLastMessages();
 }
-
-/*
-function displayLastMessages() {
-    caches.open('data').then(dataCache => {
-        dataCache.match('fact')
-            .then(response => response ? response.text() : '')
-            .then(txt => factOutput.innerText = txt);
-
-        dataCache.match('joke')
-            .then(response => response ? response.text() : '')
-            .then(txt => jokeOutput.innerText = txt);
-    });
-}
- */
 
 async function unsubscribe() {
     const registration = await navigator.serviceWorker.ready;

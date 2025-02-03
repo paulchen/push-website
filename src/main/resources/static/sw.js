@@ -1,6 +1,6 @@
 // TODO simplify
 
-self.addEventListener('activate', event => event.waitUntil(clients.claim()));
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('push', event => event.waitUntil(handlePushEvent(event)));
 
@@ -9,85 +9,39 @@ self.addEventListener('notificationclick', event => event.waitUntil(handleNotifi
 self.addEventListener('notificationclose', event => console.info('notificationclose event fired'));
 
 async function handlePushEvent(event) {
-    console.info('push event emitted');
+    console.info('push event received');
 
-    const needToShow = await needToShowNotification();
-    const dataCache = await caches.open('data');
-
-    if (!event.data) {
-        console.info('number fact received');
-
-        if (needToShow) {
-            await self.registration.showNotification('Numbers API', {
-                body: 'A new fact has arrived',
-                tag: 'numberfact',
-                icon: 'numbers.png'
-            });
-        }
-
-        const response = await fetch('lastNumbersAPIFact');
-        const fact = await response.text();
-
-        await dataCache.put('fact', new Response(fact));
-    }
-    else {
-        console.info('chuck joke received');
-
-        const msg = event.data.json();
-
-        console.info(msg)
-
-        if (needToShow) {
-            // TODO use data from notification
-            await self.registration.showNotification("this is a title", {
-                body: "this is a text",
-                icon: 'huntu.png' // TODO
-            });
-        }
-
-        await dataCache.put('joke', new Response(msg.body));
+    if(!await needToShowNotification()) {
+        return;
     }
 
-    const allClients = await clients.matchAll({ includeUncontrolled: true });
-    for (const client of allClients) {
-        client.postMessage('data-updated');
-    }
+    const msg = JSON.parse(event.data.json());
+    console.info(msg)
+
+    await self.registration.showNotification(msg.title, {
+        body: msg.text,
+        icon: 'icons/' + msg.icon,
+        data: msg
+    });
 }
 
-const urlToOpen1 = new URL('/index.html', self.location.origin).href;
-const urlToOpen2 = new URL('/', self.location.origin).href;
-
 async function handleNotificationClick(event) {
-    await clients.openWindow("https://huntu.at/")
+    const url = event.notification.data.url
 
-    /*
-    let openClient = null;
-    const allClients = await clients.matchAll({ includeUncontrolled: true, type: 'window' });
-    for (const client of allClients) {
-        if (client.url === urlToOpen1 || client.url === urlToOpen2) {
-            openClient = client;
-            break;
-        }
-    }
+    const allClients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+    const openClient= allClients.find(client => client.url === url)
 
     if (openClient) {
         await openClient.focus();
     } else {
-        await clients.openWindow(urlToOpen1);
+        await self.clients.openWindow(url);
     }
-    */
 
     event.notification.close();
 }
 
 async function needToShowNotification() {
-    /*
-    const allClients = await clients.matchAll({ includeUncontrolled: true });
-    for (const client of allClients) {
-        if (client.visibilityState === 'visible') {
-            return false;
-        }
-    }
-     */
-    return true;
+    const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+
+    return allClients.find(client => client.visibilityState === 'visible') === undefined
 }
