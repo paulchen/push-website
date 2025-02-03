@@ -11,9 +11,9 @@ self.addEventListener('notificationclose', event => console.info('notificationcl
 async function handlePushEvent(event) {
     console.info('push event received');
 
-    if(!await needToShowNotification()) {
-        return;
-    }
+    // if(!await needToShowNotification()) {
+    //     return;
+    // }
 
     const msg = JSON.parse(event.data.json());
     console.info(msg)
@@ -28,20 +28,23 @@ async function handlePushEvent(event) {
 async function handleNotificationClick(event) {
     const url = event.notification.data.url
 
-    const allClients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
-    const openClient= allClients.find(client => client.url === url)
-
-    if (openClient) {
-        await openClient.focus();
-    } else {
-        await self.clients.openWindow(url);
-    }
+    await self.clients.openWindow(url);
 
     event.notification.close();
+    // const allClients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+    // const openClient= allClients.find(client => client.url === url)
+    //
+    // if (openClient) {
+    //     await openClient.focus();
+    // } else {
+    //     await self.clients.openWindow(url);
+    // }
+    //
+    // event.notification.close();
 }
 
-async function needToShowNotification() {
-    const allClients = await self.clients.matchAll({ includeUncontrolled: true });
-
-    return allClients.find(client => client.visibilityState === 'visible') === undefined
-}
+// async function needToShowNotification() {
+//     const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+//
+//     return allClients.find(client => client.visibilityState === 'visible') === undefined
+// }
