@@ -1,6 +1,8 @@
 const subscribeButton = document.getElementById('subscribeButton');
 const unsubscribeButton = document.getElementById('unsubscribeButton');
 
+const urlPrefix = document.querySelectorAll('script[src$="client.js"]').item(0).src.replace('/client.js', '');
+
 if ("serviceWorker" in navigator) {
     try {
         checkSubscription().then();
@@ -30,7 +32,7 @@ async function checkSubscription() {
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
 
-        const response = await fetch("/services/isSubscribed", {
+        const response = await fetch(urlPrefix + "/services/isSubscribed", {
             method: 'POST',
             body: JSON.stringify(subscription),
             headers: {
@@ -51,13 +53,13 @@ async function checkSubscription() {
 }
 
 async function init() {
-    fetch('/services/publicSigningKey')
+    fetch(urlPrefix + '/services/publicSigningKey')
         .then(response => response.arrayBuffer())
         .then(key => this.publicSigningKey = key)
         .finally(() => console.info('Application Server Public Key fetched from the server'));
 
     await navigator.serviceWorker.register("/sw.js", {
-        scope: "/"
+        scope: location.origin
     });
 
     await navigator.serviceWorker.ready;
@@ -72,7 +74,7 @@ async function unsubscribe() {
         if (successful) {
             console.info('Unsubscription successful');
 
-            await fetch("/services/unsubscribe", {
+            await fetch(urlPrefix + "/services/unsubscribe", {
                 method: 'POST',
                 body: JSON.stringify(subscription),
                 headers: {
@@ -100,7 +102,7 @@ async function subscribe() {
 
     console.info(`Subscribed to Push Service: ${subscription.endpoint}`);
 
-    await fetch("/services/subscribe", {
+    await fetch(urlPrefix + "/services/subscribe", {
         method: 'POST',
         body: JSON.stringify(subscription),
         headers: {
