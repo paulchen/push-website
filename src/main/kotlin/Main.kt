@@ -73,6 +73,7 @@ fun main() {
                 route("/services/notify") {
                     post {
                         PushService().sendMessageToAllSubscribers(call.receive<PushMessage>())
+                        call.respond(HttpStatusCode.Accepted)
                     }
                 }
             }
