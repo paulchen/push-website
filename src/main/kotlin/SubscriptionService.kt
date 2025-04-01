@@ -5,6 +5,7 @@ import org.ktorm.database.Database
 import org.ktorm.database.use
 import org.ktorm.dsl.eq
 import org.ktorm.entity.add
+import org.ktorm.entity.count
 import org.ktorm.entity.find
 import org.ktorm.entity.removeIf
 import org.ktorm.support.sqlite.SQLiteDialect
@@ -68,6 +69,8 @@ class SubscriptionService private constructor() {
     fun getSubscription(endpoint: String) = connect().subscriptions.find { it.endpoint eq endpoint }
 
     fun getSubscriptions() = connect().subscriptions.asKotlinSequence()
+
+    fun getSubscriberCount() = connect().subscriptions.count()
 }
 
 data class SubscriptionKeys(val p256dh: String, val auth: String)

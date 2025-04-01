@@ -70,6 +70,11 @@ fun main() {
                 }
             }
             authenticate("basic-auth") {
+                route("/services/subscribers") {
+                    get {
+                        call.respond(mapOf("subscribers" to SubscriptionService.getInstance().getSubscriberCount()))
+                    }
+                }
                 route("/services/notify") {
                     post {
                         PushService().sendMessageToAllSubscribers(call.receive<PushMessage>())
