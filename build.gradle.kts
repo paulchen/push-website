@@ -39,6 +39,7 @@ dependencies {
 
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     implementation("com.auth0:java-jwt:4.5.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
 

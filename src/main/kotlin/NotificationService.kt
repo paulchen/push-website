@@ -94,17 +94,22 @@ class NotificationService private constructor() : Logging {
             if (this.future != null) {
                 this.future!!.cancel(false)
             }
-            val dateTime = connect().notifications.sortedByDescending { it.dateTime }.firstOrNull()?.dateTime ?: return
+            val dateTime = connect().notifications.sortedByDescending { it.dateTime }.firstOrNull()?.dateTime
+            if (dateTime == null) {
+                logger().debug("No scheduled notifications found, not scheduling next run")
+                return
+            }
             val seconds = max(30, ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime))
             this.future = executorService.schedule({ sendNotifications() }, seconds, TimeUnit.SECONDS)
 
-            logger().info("Scheduled next run for {} (in {} seconds)", dateTime, seconds)
+            logger().info("Scheduled next run for {} (in {} seconds)", LocalDateTime.now().plusSeconds(seconds), seconds)
         }
     }
 
     private fun sendNotifications() {
         try {
-            connect().notifications
+            val connection = connect()
+            connection.notifications
                 .filter { it.dateTime lte LocalDateTime.now() }
                 .forEach {
                     logger().info("Sending notification {}", it.id)

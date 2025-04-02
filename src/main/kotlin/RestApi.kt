@@ -2,6 +2,7 @@ package at.rueckgr
 
 import at.rueckgr.util.Logging
 import at.rueckgr.util.logger
+import com.fasterxml.jackson.databind.SerializationFeature
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -22,6 +23,7 @@ class RestApi : Logging {
             install(ContentNegotiation) {
                 jackson {
                     findAndRegisterModules()
+                    configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 }
             }
             install(Authentication) {

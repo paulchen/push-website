@@ -24,7 +24,9 @@ class PushService {
     }
 
     fun sendMessageToAllSubscribers(notification: Notification) {
-        val message = ObjectMapper().writeValueAsString(notification)
+        val message = ObjectMapper()
+            .findAndRegisterModules()
+            .writeValueAsString(notification)
         SubscriptionService.getInstance().getSubscriptions().forEach {
             // TODO use a queue here
             if (!this.sendMessage(it, message)) {
@@ -35,7 +37,9 @@ class PushService {
 
     private fun sendMessage(subscription: Subscription, message: String): Boolean {
         val bytes: ByteArray = CryptoService.getInstance().encrypt(
-            ObjectMapper().writeValueAsString(message),
+            ObjectMapper()
+                .findAndRegisterModules()
+                .writeValueAsString(message),
             subscription.p256dh, subscription.auth, 0
         )
 
