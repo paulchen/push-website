@@ -99,7 +99,8 @@ class NotificationService private constructor() : Logging {
                 logger().debug("No scheduled notifications found, not scheduling next run")
                 return
             }
-            val seconds = max(30, ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime))
+            // add 1 because otherwise the scheduler might run fractions of a second too early
+            val seconds = max(30, ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime) + 1)
             this.future = executorService.schedule({ sendNotifications() }, seconds, TimeUnit.SECONDS)
 
             logger().info("Scheduled next run for {} (in {} seconds)", LocalDateTime.now().plusSeconds(seconds), seconds)
