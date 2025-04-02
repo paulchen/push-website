@@ -23,8 +23,8 @@ class PushService {
         jwtAlgorithm = Algorithm.ECDSA256(serverKeys.publicKey, serverKeys.privateKey)
     }
 
-    fun sendMessageToAllSubscribers(pushMessage: PushMessage) {
-        val message = ObjectMapper().writeValueAsString(pushMessage)
+    fun sendMessageToAllSubscribers(notification: Notification) {
+        val message = ObjectMapper().writeValueAsString(notification)
         SubscriptionService.getInstance().getSubscriptions().forEach {
             // TODO use a queue here
             if (!this.sendMessage(it, message)) {

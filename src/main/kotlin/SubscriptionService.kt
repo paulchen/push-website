@@ -11,6 +11,20 @@ import org.ktorm.entity.removeIf
 import org.ktorm.support.sqlite.SQLiteDialect
 
 class SubscriptionService private constructor() {
+    init {
+        val createTableQuery = """CREATE TABLE IF NOT EXISTS `subscription` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                `endpoint` TEXT NOT NULL,
+                `p256dh` TEXT NOT NULL,
+                `auth` TEXT NOT NULL
+            )"""
+        connect().useConnection { conn ->
+            conn.createStatement().use {
+                it.executeUpdate(createTableQuery)
+            }
+        }
+    }
+
     companion object {
         private var instance: SubscriptionService? = null
 
@@ -26,24 +40,7 @@ class SubscriptionService private constructor() {
         }
     }
 
-    private fun connect(): Database {
-        val connection = Database.connect(url = "jdbc:sqlite:data/database.db", dialect = SQLiteDialect())
-
-        // TODO only run this once during startup
-        val createTableQuery = """CREATE TABLE IF NOT EXISTS `subscription` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-                `endpoint` TEXT NOT NULL,
-                `p256dh` TEXT NOT NULL,
-                `auth` TEXT NOT NULL
-            )"""
-        connection.useConnection { conn ->
-            conn.createStatement().use {
-                it.executeUpdate(createTableQuery)
-            }
-        }
-
-        return connection
-    }
+    private fun connect() = Database.connect(url = "jdbc:sqlite:data/database.db", dialect = SQLiteDialect())
 
     fun subscribe(subscription: Subscription) {
         synchronized(this) {
