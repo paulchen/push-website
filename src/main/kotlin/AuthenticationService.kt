@@ -1,13 +1,15 @@
 package at.rueckgr
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import at.rueckgr.util.Logging
+import at.rueckgr.util.logger
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.ktor.server.auth.*
 import java.io.File
 import java.io.IOException
 
-class AuthenticationService private constructor() {
+class AuthenticationService private constructor() : Logging {
     companion object {
         private var instance: AuthenticationService? = null
 
@@ -24,9 +26,9 @@ class AuthenticationService private constructor() {
     }
 
     fun authenticate(credentials: UserPasswordCredential): UserIdPrincipal? {
-        val file = File("data/users.yaml") // TODO
+        val file = File("data/users.yaml")
         if (!file.exists()) {
-            // TODO
+            logger().error("data/users.yaml does not exist")
             return null
         }
 
@@ -36,8 +38,7 @@ class AuthenticationService private constructor() {
                 .readValue(file, Users::class.java)
         }
         catch (e: IOException) {
-            e.printStackTrace()
-            // TODO
+            logger().error("Error reading data/users.yaml", e)
             return null
         }
 

@@ -1,6 +1,7 @@
 package at.rueckgr
 
 import at.rueckgr.database.subscriptions
+import at.rueckgr.util.Logging
 import org.ktorm.database.Database
 import org.ktorm.database.use
 import org.ktorm.dsl.eq
@@ -10,7 +11,7 @@ import org.ktorm.entity.find
 import org.ktorm.entity.removeIf
 import org.ktorm.support.sqlite.SQLiteDialect
 
-class SubscriptionService private constructor() {
+class SubscriptionService private constructor() : Logging {
     init {
         val createTableQuery = """CREATE TABLE IF NOT EXISTS `subscription` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT,

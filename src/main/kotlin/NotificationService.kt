@@ -65,13 +65,17 @@ class NotificationService private constructor() : Logging {
             return false
         }
         else {
-            connect().notifications.add(at.rueckgr.database.Notification {
+            val entity = at.rueckgr.database.Notification {
                 title = notification.title
                 text = notification.text
                 url = notification.url
                 icon = notification.icon
                 dateTime = notification.dateTime
-            })
+            }
+            connect().notifications.add(entity)
+            entity.flushChanges()
+
+            logger().info("Created notification with id {}", entity.id)
 
             scheduleNextRun()
         }

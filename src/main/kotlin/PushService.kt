@@ -1,6 +1,8 @@
 package at.rueckgr
 
 import at.rueckgr.database.Subscription
+import at.rueckgr.util.Logging
+import at.rueckgr.util.logger
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -15,7 +17,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 
-class PushService {
+class PushService : Logging {
     private val jwtAlgorithm: Algorithm
 
     init {
@@ -24,12 +26,14 @@ class PushService {
     }
 
     fun sendMessageToAllSubscribers(notification: Notification) {
+        logger().info("Sending notification to all subscribers: {}", notification)
         val message = ObjectMapper()
             .findAndRegisterModules()
             .writeValueAsString(notification)
         SubscriptionService.getInstance().getSubscriptions().forEach {
             // TODO use a queue here
             if (!this.sendMessage(it, message)) {
+                logger().info("Sending notification failed, unsubscribing client")
                 SubscriptionService.getInstance().unsubscribe(it.endpoint)
             }
         }
@@ -64,14 +68,14 @@ class PushService {
         runBlocking {
             val response = client.post(subscription.endpoint) {
                 headers {
-                    append("TTL", "180")
+                    append("TTL", "180") // TODO configurable
                     append(HttpHeaders.Authorization, "vapid t=$token, k=$key")
                     append(HttpHeaders.ContentType, "application/octet-stream")
                     append(HttpHeaders.ContentEncoding, "aes128gcm")
                 }
                 setBody(bytes)
             }
-            println(response.status) // TODO error handling
+            logger().info("Status code received from service: {}", response.status)
         }
 
         return true

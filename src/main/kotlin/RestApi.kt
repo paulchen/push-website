@@ -37,27 +37,32 @@ class RestApi : Logging {
                 header(HttpHeaders.AccessControlAllowOrigin, "*")
                 header(HttpHeaders.AccessControlAllowHeaders, "content-type")
             }
-            // TODO logging
             routing {
                 staticResources("/", "static")
                 staticFiles("/icons", File("data/icons"))
                 route("/services/publicSigningKey") {
                     get {
-                        call.respond(ServerKeys.getInstance().publicKeyUncompressed)
+                        val key = ServerKeys.getInstance().publicKeyUncompressed
+                        logger().debug("Returning public key: {}", key)
+                        call.respond(key)
                     }
                 }
                 route("/services/isSubscribed") {
                     options { call.respond(HttpStatusCode.OK) }
                     post {
                         val subscription = call.receive<Subscription>()
-                        call.respond(SubscriptionService.getInstance().getSubscription(subscription.endpoint) != null)
+                        val subscribed = SubscriptionService.getInstance().getSubscription(subscription.endpoint) != null
+                        logger().debug("Checking whether {} is subscribed: {}", subscription.endpoint, subscribed)
+                        call.respond(subscribed)
                     }
                 }
                 route("/services/subscribe") {
                     options { call.respond(HttpStatusCode.OK) }
                     post {
                         try {
-                            SubscriptionService.getInstance().subscribe(call.receive<Subscription>())
+                            val subscription = call.receive<Subscription>()
+                            logger().debug("Received subscription request for {}", subscription)
+                            SubscriptionService.getInstance().subscribe(subscription)
                             call.respond(HttpStatusCode.Created)
                         }
                         catch (e: Exception) {
@@ -69,19 +74,25 @@ class RestApi : Logging {
                 route("/services/unsubscribe") {
                     options { call.respond(HttpStatusCode.OK) }
                     post {
-                        SubscriptionService.getInstance().unsubscribe(call.receive<Subscription>())
+                        val subscription = call.receive<Subscription>()
+                        logger().debug("Received unsubscription request for {}", subscription)
+                        SubscriptionService.getInstance().unsubscribe(subscription)
                         call.respond(HttpStatusCode.OK)
                     }
                 }
                 authenticate("basic-auth") {
                     route("/services/subscribers") {
                         get {
-                            call.respond(mapOf("subscribers" to SubscriptionService.getInstance().getSubscriberCount()))
+                            val subscriberCount = SubscriptionService.getInstance().getSubscriberCount()
+                            logger().debug("Current count of subscribers: {}", subscriberCount)
+                            call.respond(mapOf("subscribers" to subscriberCount))
                         }
                     }
                     route("/services/notifications") {
                         post {
-                            if(!NotificationService.getInstance().add(call.receive<Notification>())) {
+                            val notification = call.receive<Notification>()
+                            logger().debug("Received new notification: {}", notification)
+                            if(!NotificationService.getInstance().add(notification)) {
                                 call.respond(HttpStatusCode.BadRequest)
                             }
                             else {
@@ -89,12 +100,16 @@ class RestApi : Logging {
                             }
                         }
                         get {
-                            call.respond(NotificationService.getInstance().getAll())
+                            val notifications = NotificationService.getInstance().getAll()
+                            logger().debug("Returning list of {} notifications", notifications.size)
+                            call.respond(notifications)
                         }
                     }
                     route("services/notifications/{id}") {
                         delete {
-                            NotificationService.getInstance().delete(call.parameters["id"]!!.toLong())
+                            val id = call.parameters["id"]!!.toLong()
+                            logger().debug("Deleting notification with id {}", id)
+                            NotificationService.getInstance().delete(id)
                             call.respond(HttpStatusCode.NoContent)
                         }
                     }
