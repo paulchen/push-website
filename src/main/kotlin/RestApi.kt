@@ -33,8 +33,7 @@ class RestApi : Logging {
                 }
             }
             install(DefaultHeaders) {
-                // TODO
-                header(HttpHeaders.AccessControlAllowOrigin, "*")
+                header(HttpHeaders.AccessControlAllowOrigin, System.getenv("ALLOW_ORIGIN"))
                 header(HttpHeaders.AccessControlAllowHeaders, "content-type")
             }
             routing {
