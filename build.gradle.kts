@@ -45,6 +45,7 @@ dependencies {
 
     implementation("org.ktorm:ktorm-core:$ktormVersion")
     implementation("org.ktorm:ktorm-support-sqlite:$ktormVersion")
+    implementation("org.ktorm:ktorm-jackson:$ktormVersion")
     implementation("org.xerial:sqlite-jdbc:3.48.0.0")
 }
 

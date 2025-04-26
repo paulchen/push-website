@@ -90,9 +90,9 @@ class RestApi : Logging {
                     }
                     route("/services/notifications") {
                         post {
-                            val notification = call.receive<Notification>()
-                            logger().debug("Received new notification: {}", notification)
-                            if(!NotificationService.getInstance().add(notification)) {
+                            val restNotification = call.receive<RestNotification>()
+                            logger().debug("Received new notification: {}", restNotification)
+                            if(!NotificationService.getInstance().add(restNotification)) {
                                 call.respond(HttpStatusCode.BadRequest)
                             }
                             else {
@@ -109,7 +109,7 @@ class RestApi : Logging {
                         delete {
                             val id = call.parameters["id"]!!.toLong()
                             logger().debug("Deleting notification with id {}", id)
-                            NotificationService.getInstance().delete(id)
+                            NotificationService.getInstance().deleteNotification(id)
                             call.respond(HttpStatusCode.NoContent)
                         }
                     }

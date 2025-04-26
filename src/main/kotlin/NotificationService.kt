@@ -1,12 +1,11 @@
 package at.rueckgr
 
-import at.rueckgr.database.notifications
+import at.rueckgr.database.*
 import at.rueckgr.util.Logging
 import at.rueckgr.util.logger
 import org.ktorm.database.Database
 import org.ktorm.database.use
 import org.ktorm.dsl.eq
-import org.ktorm.dsl.lte
 import org.ktorm.entity.*
 import org.ktorm.support.sqlite.SQLiteDialect
 import java.time.LocalDateTime
@@ -21,7 +20,7 @@ class NotificationService private constructor() : Logging {
     private val executorService = Executors.newScheduledThreadPool(1)
 
     init {
-        val createTableQuery = """CREATE TABLE IF NOT EXISTS `notification` (
+        val createTableQuery1 = """CREATE TABLE IF NOT EXISTS `notification` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
                 `title` TEXT NOT NULL,
                 `text` TEXT NOT NULL,
@@ -29,9 +28,15 @@ class NotificationService private constructor() : Logging {
                 `icon` TEXT NOT NULL,
                 `date_time` DATETIME NOT NULL
             )"""
+        val createTableQuery2 = """CREATE TABLE IF NOT EXISTS `notification_queue` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                `notification_id` INTEGER NOT NULL,
+                `subscription_id` INTEGER NOT NULL
+            )"""
         connect().useConnection { conn ->
             conn.createStatement().use {
-                it.executeUpdate(createTableQuery)
+                it.executeUpdate(createTableQuery1)
+                it.executeUpdate(createTableQuery2)
             }
         }
 
@@ -55,22 +60,16 @@ class NotificationService private constructor() : Logging {
 
     private fun connect() = Database.connect(url = "jdbc:sqlite:data/database.db", dialect = SQLiteDialect())
 
-    fun add(notification: Notification): Boolean {
-        logger().info("Received notification {}", notification)
+    fun add(restNotification: RestNotification): Boolean {
+        logger().info("Received notification {}", restNotification)
 
-        if (notification.dateTime == null) {
-            PushService().sendMessageToAllSubscribers(notification)
-        }
-        else if (notification.dateTime.isBefore(LocalDateTime.now())) {
-            return false
-        }
-        else {
-            val entity = at.rueckgr.database.Notification {
-                title = notification.title
-                text = notification.text
-                url = notification.url
-                icon = notification.icon
-                dateTime = notification.dateTime
+        try {
+            val entity = Notification {
+                title = restNotification.title
+                text = restNotification.text
+                url = restNotification.url
+                icon = restNotification.icon
+                dateTime = restNotification.dateTime ?: LocalDateTime.now()
             }
             connect().notifications.add(entity)
             entity.flushChanges()
@@ -78,19 +77,30 @@ class NotificationService private constructor() : Logging {
             logger().info("Created notification with id {}", entity.id)
 
             scheduleNextRun()
-        }
 
-        return true
+            return true
+        }
+        catch (e: Exception) {
+            logger().error("Error creating notification", e)
+            return false
+        }
     }
 
     fun getAll() = connect().notifications.map { mapNotification(it) }.toList()
 
-    private fun mapNotification(entity: at.rueckgr.database.Notification) = Notification(entity.id, entity.title, entity.text, entity.url, entity.icon, entity.dateTime)
+    private fun mapNotification(entity: Notification) = RestNotification(entity.id, entity.title, entity.text, entity.url, entity.icon, entity.dateTime)
 
-    fun delete(id: Long) {
+    fun deleteNotification(id: Long, reschedule: Boolean = true) {
         logger().info("Deleting notification {}", id)
         connect().notifications.removeIf { it.id eq id }
-        scheduleNextRun()
+        if (reschedule) {
+            scheduleNextRun()
+        }
+    }
+
+    private fun deleteQueueItem(id: Long) {
+        logger().info("Deleting notification queue item {}", id)
+        connect().notificationQueues.removeIf { it.id eq id }
     }
 
     private fun scheduleNextRun() {
@@ -104,7 +114,7 @@ class NotificationService private constructor() : Logging {
                 return
             }
             // add 1 because otherwise the scheduler might run fractions of a second too early
-            val seconds = max(30, ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime) + 1)
+            val seconds = max(5, ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime) + 1) // TODO configurable
             this.future = executorService.schedule({ sendNotifications() }, seconds, TimeUnit.SECONDS)
 
             logger().info("Scheduled next run for {} (in {} seconds)", LocalDateTime.now().plusSeconds(seconds), seconds)
@@ -114,13 +124,59 @@ class NotificationService private constructor() : Logging {
     private fun sendNotifications() {
         try {
             val connection = connect()
-            connection.notifications
-                .filter { it.dateTime lte LocalDateTime.now() }
-                .forEach {
-                    logger().info("Sending notification {}", it.id)
-                    PushService().sendMessageToAllSubscribers(mapNotification(it))
-                    delete(it.id)
+
+            val notificationsInQueue = connection
+                .notificationQueues
+                .map { it.notification.id }
+                .toSet()
+            logger().debug("Notifications that already have queue entries: {}", notificationsInQueue)
+
+            val subscriptions = connection.subscriptions.toList()
+            logger().debug("Subscription count: {}", subscriptions.size)
+
+            // add queue entries for notifications that do not have queue entries yet
+            for (notificationItem in connection.notifications) {
+                if (!notificationsInQueue.contains(notificationItem.id)) {
+                    logger().debug("Creating notification queue entries for notification {}", notificationItem.id)
+                    for (subscriptionItem in subscriptions) {
+                        logger().debug("Creating notification queue entry for notification {} and subscription {}",
+                            notificationItem.id, subscriptionItem.id)
+                        val entity = NotificationQueue {
+                            notification = notificationItem
+                            subscription = subscriptionItem
+                        }
+                        connect().notificationQueues.add(entity)
+                        entity.flushChanges()
+
+                        logger().info("Created notification queue entry with id {} for notification {} and subscription {}",
+                            entity.id, notificationItem.id, subscriptionItem.id)
+                    }
                 }
+            }
+
+            val handledNotificationIds = connection.notificationQueues
+                .sortedBy { it.id }
+                .take(10) // TODO configurable
+                .map {
+                    logger().info("Sending notification queue item {}", it.id)
+                    PushService().sendMessage(it)
+                    deleteQueueItem(it.id)
+                    it.notification.id
+                }
+                .toSet()
+
+            val notificationsNowInQueue = connection
+                .notificationQueues
+                .map { it.notification.id }
+                .toSet()
+            logger().debug("Notifications that still have queue entries: {}", notificationsNowInQueue)
+
+            // remove all notifications that do not have queue entries anymore
+            for(notificationId in handledNotificationIds) {
+                if (!notificationsNowInQueue.contains(notificationId)) {
+                    deleteNotification(notificationId, false)
+                }
+            }
         }
         catch (e: Exception) {
             logger().error(e)
@@ -131,4 +187,4 @@ class NotificationService private constructor() : Logging {
     }
 }
 
-data class Notification(val id: Long?, val title: String, val text: String, val url: String, val icon: String, val dateTime: LocalDateTime?)
+data class RestNotification(val id: Long?, val title: String, val text: String, val url: String, val icon: String, val dateTime: LocalDateTime?)

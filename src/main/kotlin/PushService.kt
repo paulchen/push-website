@@ -1,6 +1,7 @@
 package at.rueckgr
 
-import at.rueckgr.database.Subscription
+import at.rueckgr.database.Notification
+import at.rueckgr.database.NotificationQueue
 import at.rueckgr.util.Logging
 import at.rueckgr.util.logger
 import com.auth0.jwt.JWT
@@ -25,21 +26,15 @@ class PushService : Logging {
         jwtAlgorithm = Algorithm.ECDSA256(serverKeys.publicKey, serverKeys.privateKey)
     }
 
-    fun sendMessageToAllSubscribers(notification: Notification) {
-        logger().info("Sending notification to all subscribers: {}", notification)
+    fun sendMessage(notificationQueue: NotificationQueue): Boolean {
+        logger().info("Sending notification queue: {} for notification {} and subscription {}",
+            notificationQueue.id, notificationQueue.notification.id, notificationQueue.subscription.id)
+
         val message = ObjectMapper()
             .findAndRegisterModules()
-            .writeValueAsString(notification)
-        SubscriptionService.getInstance().getSubscriptions().forEach {
-            // TODO use a queue here
-            if (!this.sendMessage(it, message)) {
-                logger().info("Sending notification failed, unsubscribing client")
-                SubscriptionService.getInstance().unsubscribe(it.endpoint)
-            }
-        }
-    }
+            .writeValueAsString(notificationQueue.notification)
+        val subscription = notificationQueue.subscription
 
-    private fun sendMessage(subscription: Subscription, message: String): Boolean {
         val bytes: ByteArray = CryptoService.getInstance().encrypt(
             ObjectMapper()
                 .findAndRegisterModules()
@@ -76,6 +71,10 @@ class PushService : Logging {
                 setBody(bytes)
             }
             logger().info("Status code received from service: {}", response.status)
+
+            // TODO handle response.status
+            // logger().info("Sending notification failed, unsubscribing client")
+            // SubscriptionService.getInstance().unsubscribe(it.endpoint)
         }
 
         return true
