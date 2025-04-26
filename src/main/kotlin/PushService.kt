@@ -52,7 +52,7 @@ class PushService : Logging {
         val origin = uri.scheme + "://" + uri.host
 
         val expires = LocalDateTime.now().plusHours(12).atZone(ZoneId.systemDefault()).toInstant()
-        val email = "paulchen@rueckgr.at" // TODO configurable
+        val email = System.getenv("EMAIL")
         val token = JWT.create()
             .withAudience(origin)
             .withExpiresAt(expires)
@@ -63,7 +63,7 @@ class PushService : Logging {
         runBlocking {
             val response = client.post(subscription.endpoint) {
                 headers {
-                    append("TTL", "180") // TODO configurable
+                    append("TTL", System.getenv("TTL"))
                     append(HttpHeaders.Authorization, "vapid t=$token, k=$key")
                     append(HttpHeaders.ContentType, "application/octet-stream")
                     append(HttpHeaders.ContentEncoding, "aes128gcm")

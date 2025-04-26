@@ -114,7 +114,7 @@ class NotificationService private constructor() : Logging {
                 return
             }
             // add 1 because otherwise the scheduler might run fractions of a second too early
-            val seconds = max(5, ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime) + 1) // TODO configurable
+            val seconds = max(System.getenv("RUN_DELAY").toLong(), ChronoUnit.SECONDS.between(LocalDateTime.now(), dateTime) + 1)
             this.future = executorService.schedule({ sendNotifications() }, seconds, TimeUnit.SECONDS)
 
             logger().info("Scheduled next run for {} (in {} seconds)", LocalDateTime.now().plusSeconds(seconds), seconds)
@@ -156,7 +156,7 @@ class NotificationService private constructor() : Logging {
 
             val handledNotificationIds = connection.notificationQueues
                 .sortedBy { it.id }
-                .take(10) // TODO configurable
+                .take(System.getenv("BATCH_SIZE").toInt())
                 .map {
                     logger().info("Sending notification queue item {}", it.id)
                     PushService().sendMessage(it)

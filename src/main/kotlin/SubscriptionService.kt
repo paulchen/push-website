@@ -58,15 +58,13 @@ class SubscriptionService private constructor() : Logging {
 
     fun unsubscribe(subscription: Subscription) = unsubscribe(subscription.endpoint)
 
-    fun unsubscribe(endpoint: String) {
+    private fun unsubscribe(endpoint: String) {
         synchronized(this) {
             connect().subscriptions.removeIf { it.endpoint eq endpoint }
         }
     }
 
     fun getSubscription(endpoint: String) = connect().subscriptions.find { it.endpoint eq endpoint }
-
-    fun getSubscriptions() = connect().subscriptions.asKotlinSequence()
 
     fun getSubscriberCount() = connect().subscriptions.count()
 }

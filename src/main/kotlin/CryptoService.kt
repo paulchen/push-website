@@ -35,7 +35,7 @@ class CryptoService private constructor() {
         }
     }
 
-    private val P256_HEAD = Base64.getDecoder().decode("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgA") // TODO ?
+    private val P256_HEAD = Base64.getDecoder().decode("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgA")
 
     val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("EC")
 
