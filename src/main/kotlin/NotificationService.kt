@@ -103,6 +103,13 @@ class NotificationService private constructor() : Logging {
         connect().notificationQueues.removeIf { it.id eq id }
     }
 
+    private fun deleteSubscription(id: Long) {
+        logger().info("Deleting subscription {}", id)
+        val connection = connect()
+        connection.notificationQueues.removeIf { it.subscriptionId eq id }
+        connection.subscriptions.removeIf { it.id eq id }
+    }
+
     private fun scheduleNextRun() {
         synchronized(this) {
             if (this.future != null) {
@@ -154,16 +161,28 @@ class NotificationService private constructor() : Logging {
                 }
             }
 
-            val handledNotificationIds = connection.notificationQueues
+            val handledNotificationIds = HashSet<Long>()
+            val failedSubscriptions = HashSet<Long>()
+            connection.notificationQueues
                 .sortedBy { it.id }
                 .take(System.getenv("BATCH_SIZE").toInt())
-                .map {
+                .forEach {
+                    if (failedSubscriptions.contains(it.subscription.id)) {
+                        logger().info("Skipping notification queue item {} as the subscription has already failed with another item", it.id)
+                        return@forEach
+                    }
                     logger().info("Sending notification queue item {}", it.id)
-                    PushService().sendMessage(it)
-                    deleteQueueItem(it.id)
-                    it.notification.id
+                    val result = PushService().sendMessage(it)
+                    if (result == PushResult.SUCCESS) {
+                        deleteQueueItem(it.id)
+                        handledNotificationIds.add(it.notification.id)
+                    }
+                    else if (result == PushResult.FAIL) {
+                        failedSubscriptions.add(it.subscription.id!!)
+                    }
                 }
-                .toSet()
+
+            failedSubscriptions.forEach { deleteSubscription(it) }
 
             val notificationsNowInQueue = connection
                 .notificationQueues
