@@ -108,7 +108,7 @@ class NotificationService private constructor() : Logging {
             if (this.future != null) {
                 this.future!!.cancel(false)
             }
-            val dateTime = connect().notifications.sortedByDescending { it.dateTime }.firstOrNull()?.dateTime
+            val dateTime = connect().notifications.sortedBy { it.dateTime }.firstOrNull()?.dateTime
             if (dateTime == null) {
                 logger().debug("No scheduled notifications found, not scheduling next run")
                 return
