@@ -1,6 +1,5 @@
 package at.rueckgr
 
-import at.rueckgr.database.Notification
 import at.rueckgr.database.NotificationQueue
 import at.rueckgr.util.Logging
 import at.rueckgr.util.logger
@@ -26,7 +25,7 @@ class PushService : Logging {
         jwtAlgorithm = Algorithm.ECDSA256(serverKeys.publicKey, serverKeys.privateKey)
     }
 
-    fun sendMessage(notificationQueue: NotificationQueue): Boolean {
+    fun sendMessage(notificationQueue: NotificationQueue): PushResult {
         logger().info("Sending notification queue: {} for notification {} and subscription {}",
             notificationQueue.id, notificationQueue.notification.id, notificationQueue.subscription.id)
 
@@ -60,7 +59,7 @@ class PushService : Logging {
             .sign(this.jwtAlgorithm)
         val key = ServerKeys.getInstance().publicKeyBase64
 
-        runBlocking {
+        return runBlocking {
             val response = client.post(subscription.endpoint) {
                 headers {
                     append("TTL", System.getenv("TTL"))
@@ -72,12 +71,17 @@ class PushService : Logging {
             }
             logger().info("Status code received from service: {}", response.status)
 
-            // TODO handle response.status
-            // logger().info("Sending notification failed, unsubscribing client")
-            // SubscriptionService.getInstance().unsubscribe(it.endpoint)
+            return@runBlocking if (response.status.value < 300) {
+                PushResult.SUCCESS
+            }
+            else if (response.status == HttpStatusCode.NotFound || response.status == HttpStatusCode.Gone) {
+                PushResult.FAIL
+            }
+            else {
+                PushResult.RETRY
+            }
         }
-
-        return true
     }
 }
 
+enum class PushResult { SUCCESS, RETRY, FAIL }
