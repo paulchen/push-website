@@ -198,6 +198,7 @@ class NotificationService private constructor() : Logging {
             }
         }
         catch (e: Exception) {
+            e.printStackTrace()
             logger().error(e)
         }
         finally {
