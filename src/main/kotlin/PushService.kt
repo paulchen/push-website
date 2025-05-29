@@ -28,6 +28,10 @@ class PushService : Logging {
     fun sendMessage(notificationQueue: NotificationQueue): PushResult {
         logger().info("Sending notification queue: {} for notification {} and subscription {}",
             notificationQueue.id, notificationQueue.notification.id, notificationQueue.subscription.id)
+        logger().info("Notification title: {}", notificationQueue.notification.title)
+        logger().info("Notification text: {}", notificationQueue.notification.text)
+        logger().info("Notification url: {}", notificationQueue.notification.url)
+        logger().info("Notification icon: {}", notificationQueue.notification.icon)
 
         val message = ObjectMapper()
             .findAndRegisterModules()
