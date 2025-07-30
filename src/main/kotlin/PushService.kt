@@ -33,6 +33,11 @@ class PushService : Logging {
         logger().info("Notification url: {}", notificationQueue.notification.url)
         logger().info("Notification icon: {}", notificationQueue.notification.icon)
 
+        if (System.getenv("DISABLED") == "true") {
+            logger().info("Notifications disabled, not actually sending notifications now")
+            return PushResult.SUCCESS
+        }
+
         val message = ObjectMapper()
             .findAndRegisterModules()
             .writeValueAsString(notificationQueue.notification)
