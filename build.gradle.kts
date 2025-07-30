@@ -1,13 +1,13 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val ktorVersion = "3.0.3"
-val log4jVersion = "2.24.3"
-val kotlinVersion = "2.1.10"
-val jacksonVersion = "2.18.2"
+val ktorVersion = "3.2.3"
+val log4jVersion = "2.25.1"
+val kotlinVersion = "2.2.0"
+val jacksonVersion = "2.19.2"
 val ktormVersion = "4.1.1"
 
 plugins {
-    kotlin("jvm") version "2.1.10"
+    kotlin("jvm") version "2.2.0"
     id("com.github.ben-manes.versions") version "0.52.0"
     application
 }
@@ -32,7 +32,7 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-logging:$ktorVersion")
 
-    implementation("org.slf4j:slf4j-api:2.0.16")
+    implementation("org.slf4j:slf4j-api:2.0.17")
     api("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
@@ -46,7 +46,7 @@ dependencies {
     implementation("org.ktorm:ktorm-core:$ktormVersion")
     implementation("org.ktorm:ktorm-support-sqlite:$ktormVersion")
     implementation("org.ktorm:ktorm-jackson:$ktormVersion")
-    implementation("org.xerial:sqlite-jdbc:3.48.0.0")
+    implementation("org.xerial:sqlite-jdbc:3.50.3.0")
 }
 
 tasks.test {
