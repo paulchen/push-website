@@ -10,7 +10,8 @@ fun Database.Companion.migrate() {
     val logger = getLogger(Database.Companion::class.java)
 
     val migrations = listOf(
-        listOf("""CREATE TABLE IF NOT EXISTS `notification` (
+        listOf(
+            """CREATE TABLE IF NOT EXISTS `notification` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
                 `title` TEXT NOT NULL,
                 `text` TEXT NOT NULL,
@@ -22,7 +23,11 @@ fun Database.Companion.migrate() {
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
                 `notification_id` INTEGER NOT NULL,
                 `subscription_id` INTEGER NOT NULL
-            )""")
+            )"""
+        ),
+        listOf(
+            """ALTER TABLE `notification` ADD COLUMN `status` TEXT NOT NULL"""
+        )
     )
 
     val db = Database.connect()

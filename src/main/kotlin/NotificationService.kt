@@ -6,6 +6,7 @@ import at.rueckgr.util.logger
 import org.ktorm.database.Database
 import org.ktorm.dsl.eq
 import org.ktorm.dsl.lte
+import org.ktorm.dsl.neq
 import org.ktorm.dsl.notInList
 import org.ktorm.entity.*
 import java.time.LocalDateTime
@@ -52,6 +53,7 @@ class NotificationService private constructor() : Logging {
                 url = restNotification.url
                 icon = restNotification.icon
                 dateTime = restNotification.dateTime ?: LocalDateTime.now()
+                status = NotificationStatus.SCHEDULED
             }
             connect().notifications.add(entity)
             entity.flushChanges()
@@ -70,7 +72,15 @@ class NotificationService private constructor() : Logging {
 
     fun getAll() = connect().notifications.map { mapNotification(it) }.toList()
 
-    private fun mapNotification(entity: Notification) = RestNotification(entity.id, entity.title, entity.text, entity.url, entity.icon, entity.dateTime)
+    private fun mapNotification(entity: Notification) = RestNotification(entity.id, entity.title, entity.text, entity.url, entity.icon, entity.dateTime, entity.status)
+
+    fun updateNotificationStatus(id: Long, status: NotificationStatus) {
+        val notification = connect().notifications.find { it.id eq id }
+        if (notification != null) {
+            notification.status = status
+            notification.flushChanges()
+        }
+    }
 
     fun deleteNotification(id: Long, reschedule: Boolean = true) {
         logger().info("Deleting notification {}", id)
@@ -97,9 +107,13 @@ class NotificationService private constructor() : Logging {
             if (this.future != null) {
                 this.future!!.cancel(false)
             }
-            val dateTime = connect().notifications.sortedBy { it.dateTime }.firstOrNull()?.dateTime
+            val dateTime = connect().notifications
+                .filter { it.status neq NotificationStatus.PROCESSED }
+                .sortedBy { it.dateTime }
+                .firstOrNull()
+                ?.dateTime
             if (dateTime == null) {
-                logger().debug("No scheduled notifications found, not scheduling next run")
+                logger().debug("No notifications in state SCHEDULED or SENDING found, not scheduling next run")
                 return
             }
             // add 1 because otherwise the scheduler might run fractions of a second too early
@@ -125,9 +139,14 @@ class NotificationService private constructor() : Logging {
 
             // add queue entries for notifications that do not have queue entries yet
             connection.notifications
+                    .filter { it.status eq NotificationStatus.SCHEDULED }
                     .filter { it.dateTime lte LocalDateTime.now() }
                     .filter { it.id notInList notificationsInQueue }
                     .forEach { notificationItem ->
+                logger().debug("Updating notification {} to status SENDING", notificationItem.id)
+                notificationItem.status = NotificationStatus.SENDING
+                notificationItem.flushChanges()
+
                 logger().debug("Creating notification queue entries for notification {}", notificationItem.id)
                 for (subscriptionItem in subscriptions) {
                     logger().debug("Creating notification queue entry for notification {} and subscription {}",
@@ -176,7 +195,9 @@ class NotificationService private constructor() : Logging {
             // remove all notifications that do not have queue entries anymore
             handledNotificationIds
                 .filter { !notificationsNowInQueue.contains(it) }
-                .forEach { deleteNotification(it, false) }
+                .forEach {
+                    updateNotificationStatus(it, NotificationStatus.PROCESSED)
+                }
         }
         catch (e: Exception) {
             e.printStackTrace()
@@ -188,4 +209,4 @@ class NotificationService private constructor() : Logging {
     }
 }
 
-data class RestNotification(val id: Long?, val title: String, val text: String, val url: String, val icon: String, val dateTime: LocalDateTime?)
+data class RestNotification(val id: Long?, val title: String, val text: String, val url: String, val icon: String, val dateTime: LocalDateTime?, val status: NotificationStatus)

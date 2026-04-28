@@ -8,6 +8,12 @@ import java.time.LocalDateTime
 
 val Database.notifications get() = this.sequenceOf(Notifications)
 
+enum class NotificationStatus {
+    SCHEDULED,
+    SENDING,
+    PROCESSED
+}
+
 interface Notification : Entity<Notification> {
     companion object : Entity.Factory<Notification>()
 
@@ -17,6 +23,7 @@ interface Notification : Entity<Notification> {
     var url: String
     var icon: String
     var dateTime: LocalDateTime
+    var status: NotificationStatus
 }
 
 object Notifications : Table<Notification>("notification") {
@@ -26,4 +33,5 @@ object Notifications : Table<Notification>("notification") {
     var url = varchar("url").bindTo { it.url }
     var icon = varchar("icon").bindTo { it.icon }
     var dateTime = datetime("date_time").bindTo { it.dateTime }
+    var status = enum<NotificationStatus>("status").bindTo { it.status }
 }
