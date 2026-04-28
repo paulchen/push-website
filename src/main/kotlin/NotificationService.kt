@@ -4,12 +4,10 @@ import at.rueckgr.database.*
 import at.rueckgr.util.Logging
 import at.rueckgr.util.logger
 import org.ktorm.database.Database
-import org.ktorm.database.use
 import org.ktorm.dsl.eq
 import org.ktorm.dsl.lte
 import org.ktorm.dsl.notInList
 import org.ktorm.entity.*
-import org.ktorm.support.sqlite.SQLiteDialect
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Executors
@@ -22,25 +20,7 @@ class NotificationService private constructor() : Logging {
     private val executorService = Executors.newScheduledThreadPool(1)
 
     init {
-        val createTableQuery1 = """CREATE TABLE IF NOT EXISTS `notification` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-                `title` TEXT NOT NULL,
-                `text` TEXT NOT NULL,
-                `url` TEXT NOT NULL,
-                `icon` TEXT NOT NULL,
-                `date_time` DATETIME NOT NULL
-            )"""
-        val createTableQuery2 = """CREATE TABLE IF NOT EXISTS `notification_queue` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-                `notification_id` INTEGER NOT NULL,
-                `subscription_id` INTEGER NOT NULL
-            )"""
-        connect().useConnection { conn ->
-            conn.createStatement().use {
-                it.executeUpdate(createTableQuery1)
-                it.executeUpdate(createTableQuery2)
-            }
-        }
+        Database.migrate()
 
         scheduleNextRun()
     }
@@ -60,7 +40,7 @@ class NotificationService private constructor() : Logging {
         }
     }
 
-    private fun connect() = Database.connect(url = "jdbc:sqlite:data/database.db", dialect = SQLiteDialect())
+    private fun connect() = Database.connect()
 
     fun add(restNotification: RestNotification): Boolean {
         logger().info("Received notification {}", restNotification)
