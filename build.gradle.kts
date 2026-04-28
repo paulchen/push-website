@@ -1,14 +1,14 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val ktorVersion = "3.2.3"
-val log4jVersion = "2.25.1"
-val kotlinVersion = "2.2.0"
-val jacksonVersion = "2.19.2"
+val ktorVersion = "3.4.3"
+val log4jVersion = "2.25.4"
+val kotlinVersion = "2.3.21"
+val jacksonVersion = "2.21.2"
 val ktormVersion = "4.1.1"
 
 plugins {
-    kotlin("jvm") version "2.2.0"
-    id("com.github.ben-manes.versions") version "0.52.0"
+    kotlin("jvm") version "2.3.21"
+    id("com.github.ben-manes.versions") version "0.54.0"
     application
 }
 
@@ -40,13 +40,13 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-    implementation("com.auth0:java-jwt:4.5.0")
+    implementation("com.auth0:java-jwt:4.5.1")
     implementation("at.favre.lib:bcrypt:0.10.2")
 
     implementation("org.ktorm:ktorm-core:$ktormVersion")
     implementation("org.ktorm:ktorm-support-sqlite:$ktormVersion")
     implementation("org.ktorm:ktorm-jackson:$ktormVersion")
-    implementation("org.xerial:sqlite-jdbc:3.50.3.0")
+    implementation("org.xerial:sqlite-jdbc:3.53.0.0")
 }
 
 tasks.test {
@@ -54,7 +54,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
