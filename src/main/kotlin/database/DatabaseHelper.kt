@@ -26,7 +26,7 @@ fun Database.Companion.migrate() {
             )"""
         ),
         listOf(
-            """ALTER TABLE `notification` ADD COLUMN `status` TEXT NOT NULL"""
+            """ALTER TABLE `notification` ADD COLUMN `status` TEXT NOT NULL DEFAULT 'SCHEDULED'""",
         )
     )
 
