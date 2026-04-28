@@ -6,6 +6,8 @@ import at.rueckgr.util.logger
 import org.ktorm.database.Database
 import org.ktorm.database.use
 import org.ktorm.dsl.eq
+import org.ktorm.dsl.lte
+import org.ktorm.dsl.notInList
 import org.ktorm.entity.*
 import org.ktorm.support.sqlite.SQLiteDialect
 import java.time.LocalDateTime
@@ -142,22 +144,23 @@ class NotificationService private constructor() : Logging {
             logger().debug("Subscription count: {}", subscriptions.size)
 
             // add queue entries for notifications that do not have queue entries yet
-            for (notificationItem in connection.notifications) {
-                if (!notificationsInQueue.contains(notificationItem.id)) {
-                    logger().debug("Creating notification queue entries for notification {}", notificationItem.id)
-                    for (subscriptionItem in subscriptions) {
-                        logger().debug("Creating notification queue entry for notification {} and subscription {}",
-                            notificationItem.id, subscriptionItem.id)
-                        val entity = NotificationQueue {
-                            notification = notificationItem
-                            subscription = subscriptionItem
-                        }
-                        connect().notificationQueues.add(entity)
-                        entity.flushChanges()
-
-                        logger().info("Created notification queue entry with id {} for notification {} and subscription {}",
-                            entity.id, notificationItem.id, subscriptionItem.id)
+            connection.notifications
+                    .filter { it.dateTime lte LocalDateTime.now() }
+                    .filter { it.id notInList notificationsInQueue }
+                    .forEach { notificationItem ->
+                logger().debug("Creating notification queue entries for notification {}", notificationItem.id)
+                for (subscriptionItem in subscriptions) {
+                    logger().debug("Creating notification queue entry for notification {} and subscription {}",
+                        notificationItem.id, subscriptionItem.id)
+                    val entity = NotificationQueue {
+                        notification = notificationItem
+                        subscription = subscriptionItem
                     }
+                    connect().notificationQueues.add(entity)
+                    entity.flushChanges()
+
+                    logger().info("Created notification queue entry with id {} for notification {} and subscription {}",
+                        entity.id, notificationItem.id, subscriptionItem.id)
                 }
             }
 
@@ -191,11 +194,9 @@ class NotificationService private constructor() : Logging {
             logger().debug("Notifications that still have queue entries: {}", notificationsNowInQueue)
 
             // remove all notifications that do not have queue entries anymore
-            for(notificationId in handledNotificationIds) {
-                if (!notificationsNowInQueue.contains(notificationId)) {
-                    deleteNotification(notificationId, false)
-                }
-            }
+            handledNotificationIds
+                .filter { !notificationsNowInQueue.contains(it) }
+                .forEach { deleteNotification(it, false) }
         }
         catch (e: Exception) {
             e.printStackTrace()
