@@ -209,4 +209,4 @@ class NotificationService private constructor() : Logging {
     }
 }
 
-data class RestNotification(val id: Long?, val title: String, val text: String, val url: String, val icon: String, val dateTime: LocalDateTime?, val status: NotificationStatus)
+data class RestNotification(val id: Long?, val title: String, val text: String, val url: String, val icon: String, val dateTime: LocalDateTime?, val status: NotificationStatus?)
