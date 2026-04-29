@@ -69,25 +69,31 @@ class PushService : Logging {
         val key = ServerKeys.getInstance().publicKeyBase64
 
         return runBlocking {
-            val response = client.post(subscription.endpoint) {
-                headers {
-                    append("TTL", System.getenv("TTL"))
-                    append(HttpHeaders.Authorization, "vapid t=$token, k=$key")
-                    append(HttpHeaders.ContentType, "application/octet-stream")
-                    append(HttpHeaders.ContentEncoding, "aes128gcm")
+            return@runBlocking try {
+                val response = client.post(subscription.endpoint) {
+                    headers {
+                        append("TTL", System.getenv("TTL"))
+                        append(HttpHeaders.Authorization, "vapid t=$token, k=$key")
+                        append(HttpHeaders.ContentType, "application/octet-stream")
+                        append(HttpHeaders.ContentEncoding, "aes128gcm")
+                    }
+                    setBody(bytes)
                 }
-                setBody(bytes)
-            }
-            logger().info("Status code received from service: {}", response.status)
+                logger().info("Status code received from service: {}", response.status)
 
-            return@runBlocking if (response.status.value < 300) {
-                PushResult.SUCCESS
+                if (response.status.value < 300) {
+                    PushResult.SUCCESS
+                }
+                else if (response.status == HttpStatusCode.NotFound || response.status == HttpStatusCode.Gone) {
+                    PushResult.FAIL
+                }
+                else {
+                    PushResult.RETRY
+                }
             }
-            else if (response.status == HttpStatusCode.NotFound || response.status == HttpStatusCode.Gone) {
+            catch (e: Exception) {
+                logger().error("Error when calling PUSH API", e)
                 PushResult.FAIL
-            }
-            else {
-                PushResult.RETRY
             }
         }
     }
