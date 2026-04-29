@@ -108,8 +108,11 @@ class RestApi : Logging {
                         delete {
                             val id = call.parameters["id"]!!.toLong()
                             logger().debug("Deleting notification with id {}", id)
-                            NotificationService.getInstance().deleteNotification(id)
-                            call.respond(HttpStatusCode.NoContent)
+                            call.respond(when (NotificationService.getInstance().deleteNotification(id)) {
+                                ActionResult.DELETED -> HttpStatusCode.NoContent
+                                ActionResult.FORBIDDEN -> HttpStatusCode.Forbidden
+                                ActionResult.NOT_FOUND -> HttpStatusCode.NotFound
+                            })
                         }
                     }
                 }

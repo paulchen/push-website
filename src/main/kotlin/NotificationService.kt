@@ -16,6 +16,12 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
+enum class ActionResult {
+    DELETED,
+    NOT_FOUND,
+    FORBIDDEN
+}
+
 class NotificationService private constructor() : Logging {
     private var future: ScheduledFuture<*>? = null
     private val executorService = Executors.newScheduledThreadPool(1)
@@ -74,7 +80,7 @@ class NotificationService private constructor() : Logging {
 
     private fun mapNotification(entity: Notification) = RestNotification(entity.id, entity.title, entity.text, entity.url, entity.icon, entity.dateTime, entity.status)
 
-    fun updateNotificationStatus(id: Long, status: NotificationStatus) {
+    private fun updateNotificationStatus(id: Long, status: NotificationStatus) {
         val notification = connect().notifications.find { it.id eq id }
         if (notification != null) {
             notification.status = status
@@ -82,12 +88,23 @@ class NotificationService private constructor() : Logging {
         }
     }
 
-    fun deleteNotification(id: Long, reschedule: Boolean = true) {
+    fun deleteNotification(id: Long): ActionResult {
         logger().info("Deleting notification {}", id)
-        connect().notifications.removeIf { it.id eq id }
-        if (reschedule) {
-            scheduleNextRun()
+
+        val notification = connect().notifications.find { it.id eq id }
+        if (notification == null) {
+            logger().info("Notification with id {} not found", id)
+            return ActionResult.NOT_FOUND
         }
+        if (notification.status != NotificationStatus.SCHEDULED) {
+            logger().info("Refusing to delete notification with id {} in status {}", id, notification.status)
+            return ActionResult.FORBIDDEN
+        }
+
+        notification.delete()
+        scheduleNextRun()
+
+        return ActionResult.DELETED
     }
 
     private fun deleteQueueItem(id: Long) {
@@ -200,8 +217,7 @@ class NotificationService private constructor() : Logging {
                 }
         }
         catch (e: Exception) {
-            e.printStackTrace()
-            logger().error(e)
+            logger().error("Exception occurred while trying to send notifications", e)
         }
         finally {
             scheduleNextRun()
